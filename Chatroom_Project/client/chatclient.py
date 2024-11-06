@@ -128,36 +128,36 @@ while True:
             file_flag = True
             new_socket.send(to_send.encode())
 
-            #while True:
-            print("Please enter the file path and name: ")
-            file_path = input()
+            while True:
+                print("Please enter the file path and name: ")
+                file_path = input()
 
-            filename = os.path.basename(file_path)
+                filename = os.path.basename(file_path)
             #print(filename)
 
-            #try:
-                # try opening and reading the file
-            f = open(file_path, "r")
-            new_socket.send(filename.encode()) # send file name after opening to ensure its real (server will be waiting for file name)
-            data = f.read()
+                try:
+                    # try opening and reading the file
+                    f = open(file_path, "r")
+                    new_socket.send(filename.encode()) # send file name after opening to ensure its real (server will be waiting for file name)
+                    data = f.read()
 
-            if not data:
-                # print("breaking here")
-                break
-            while data:
-                new_socket.send((str(data) + '\n').encode())
-                # print(data)
-                data = f.read()
-            
-            # send end of file
-            new_socket.send("end of file.\n".encode())
+                    if not data:
+                        # print("breaking here")
+                        break
+                    while data:
+                        new_socket.send((str(data) + '\n').encode())
+                        # print(data)
+                        data = f.read()
+                    
+                    # send end of file
+                    new_socket.send("end of file.\n".encode())
 
-            # close file after sent data
-            f.close()
-            # print("breaking here2")
-            
-                #except IOError:
-                    #print("You entered an invalid filepath!")
+                    # close file after sent data
+                    f.close()
+                    # print("breaking here2")
+                    break
+                except IOError:
+                    print("You entered an invalid filepath!")
 
         if file_flag == True:
             continue

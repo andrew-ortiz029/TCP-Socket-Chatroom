@@ -124,13 +124,6 @@ def clientWatch(cs):
                         file = cs.recv(1024).decode()
                         data = file.splitlines()
                         print("reading data")
-                        #print(data)
-                        #while data:
-                            #if data == "end of file.":
-                               # break
-                            #else:
-                                #f.write(data)
-                                #data = cs.recv(1024).decode()
 
                         for line in data:
                             if line.strip() == "end of file.":
@@ -140,6 +133,18 @@ def clientWatch(cs):
 
                         f.close()
                         print("file recieved")
+
+                        # send message from file
+                        f = open(file_path, "r") # open file
+                        msg = f"{username}: " # '{username} '
+                        msg = msg + f.read() # username 
+                        date_now = datetime.now().strftime("[%H:%M] ") # add time stamp
+                        msg = date_now + msg
+                        msgList.append(msg)
+                        # Send the message to all connected clients who are ready
+                        for client_socket, client_username in clients.items():
+                            client_socket.send(msg.encode())
+                        f.close()
                         continue
 
                     # if q is entered remove the client from the client list and close connection
