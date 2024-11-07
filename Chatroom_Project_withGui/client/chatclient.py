@@ -14,11 +14,9 @@ port = 18000
 new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 new_socket.connect((host_name, port))
 
-# Global variable to hold the username
+# Global variables
 name = None
-
-# Shared flag to control the thread
-running_flag = False
+running_flag = False  # Flag to control the listener thread
 thread_flag = False
 
 # Function to listen for messages from the server
@@ -110,11 +108,17 @@ def set_username():
     # hide username prompt
     hide_username_prompt()
 
+    # Reset the thread and running_flag for the new connection
+    if thread_flag:  # If thread was previously running, stop and reinitialize it
+        running_flag = False
+        t.join()  # Wait for the previous thread to finish before restarting
+
     # Start the listener thread to receive messages
-    if not thread_flag:
-        thread_flag = True
-        running_flag = True
-        t.start()
+    thread_flag = True
+    running_flag = True  # Set running flag to true so the listening thread is active
+    t = Thread(target=listen_for_messages)  # Re-create the thread each time
+    t.daemon = True
+    t.start()
 
     # Show the message input field
     show_message_input()
@@ -124,31 +128,28 @@ def leave_chatroom():
     global running_flag, t, thread_flag  # Declare `t` as global so we can access it
     
     # Step 1: Notify the server that the user is leaving the chatroom
-    new_socket.send("q".encode())  
-    running_flag = False  # Stop the listener thread immediately
+    new_socket.send("q".encode())
     
-    # Step 2: Safely stop the listener thread without blocking the GUI
-    if t.is_alive():
-        # Instead of t.join(), we will set a flag that signals the thread to stop
-        print("Stopping listener thread.")
-        t.join()  # Gracefully wait for the listener thread to finish
+    # Step 2: Stop the listener thread safely
+    running_flag = False  # Set the running flag to false, causing the listener thread to exit
 
     # Step 3: Update the chat history with the message about leaving
     def update_gui():
         global thread_flag, running_flag
         chat_history.config(state=tk.NORMAL)  # Enable editing to insert message about leaving
-        chat_history.insert(tk.END, "You have left the chatroom.\n")
-        chat_history.yview(tk.END)
+        chat_history.delete(1.0, tk.END)  # Clear the message box (delete all content)
+        #chat_history.insert(tk.END, "You have left the chatroom.\n")  # Optionally show a message
+        chat_history.yview(tk.END)  # Scroll to the bottom
         chat_history.config(state=tk.DISABLED)  # Disable editing after updating
         
         # Step 4: Reset flags and show the main menu again
-        thread_flag = False
+        #thread_flag = False
         running_flag = False  # Reset running_flag just in case
         show_main_menu()  # Show the main menu after leaving the chatroom
 
     # Safely update the GUI after the thread has stopped
-    print("im not reachinig here")
     root.after(0, update_gui)
+    hide_message_input()
 
 # Function to send a message
 def send_message():
@@ -172,14 +173,13 @@ def upload_file():
             filename = os.path.basename(file_path)
             new_socket.send(filename.encode())
 
-            time.sleep(.5) # Sleep for .5 seconds
+            time.sleep(.5)  # Sleep for .5 seconds
 
             with open(file_path, "r") as f:
                 data = f.read()
                 while data:
                     new_socket.send((str(data) + '\n').encode())
                     data = f.read()
-            #new_socket.send("end of file.\n".encode())
             f.close()
             chat_history.config(state=tk.NORMAL)  # Enable editing to insert message about file
             chat_history.insert(tk.END, f"File '{filename}' sent successfully.\n")
